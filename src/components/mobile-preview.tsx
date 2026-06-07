@@ -1,0 +1,2 @@
+import { Home, Wallet, CheckSquare, Bookmark } from 'lucide-react';
+export function MobilePreview({ title, children }: { title: string; children: React.ReactNode }) { return <div className="mobile-shell"><div className="mb-4 flex items-center justify-between text-xs"><span>9:41</span><span>◼︎ ◐</span></div><h3 className="mb-4 text-center text-sm font-semibold">{title}</h3>{children}<div className="mt-5 flex justify-around border-t pt-3 text-muted-foreground"><Home size={18}/><Wallet size={18}/><CheckSquare size={18}/><Bookmark size={18}/></div></div> }

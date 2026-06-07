@@ -1,0 +1,78 @@
+# Personal Hub
+
+Личный кабинет: финансы, кредитные обязательства, ИИ-оценка финансового состояния, заметки, задачи, закладки и важные документы.
+
+## Стек
+
+- Next.js (App Router) + TypeScript
+- Tailwind CSS v3
+- Supabase (Auth, PostgreSQL, Storage, RLS)
+- OpenAI Responses API для вкладки `/ai-assessment`
+
+## Быстрый старт
+
+```bash
+cp .env.example .env.local
+# заполните NEXT_PUBLIC_SUPABASE_URL, NEXT_PUBLIC_SUPABASE_ANON_KEY и OPENAI_API_KEY
+
+npm install
+npx supabase login
+npx supabase link --project-ref YOUR_REF
+npm run db:push
+npm run dev
+```
+
+Откройте http://localhost:3000/ru/register (или `/en/register` для английского интерфейса)
+
+## Языки
+
+- Поддерживаются `ru` и `en`
+- Все маршруты идут через префикс языка: `/ru/finances`, `/en/settings`
+- Старые пути без префикса (`/finances`) автоматически редиректятся на сохранённый язык
+- Переключение языка — в `/ru/settings` или `/en/settings`
+
+## Мобильная адаптация
+
+- Layout использует mobile-first Tailwind breakpoints (`sm`, `md`, `lg`, `xl`)
+- На телефонах доступна нижняя навигация с учётом `safe-area-inset-bottom`
+- Формы, фильтры, карточки и длинные значения адаптированы под 320–430px без горизонтального overflow
+- Колокольчик уведомлений открывается как фиксированная мобильная панель
+
+## Модули
+
+| Путь | Описание |
+|------|----------|
+| `/[lang]` | Дашборд со сводкой и колокольчиком недельных отчётов |
+| `/[lang]/finances` | Транзакции, бюджеты, фильтры, кредитные карты и расчёт погашения |
+| `/[lang]/notes` | Заметки (markdown), поиск, теги |
+| `/[lang]/tasks` | Планы, kanban/list задач |
+| `/[lang]/bookmarks` | Ссылки/видео с og-metadata |
+| `/[lang]/documents` | Загрузка, подпись, хранение и скачивание документов |
+| `/[lang]/ai-assessment` | ИИ-оценка финансового состояния на основе данных кабинета |
+| `/[lang]/settings` | Тема и язык интерфейса |
+| `/[lang]/profile` | Профиль и аватар |
+
+## Финансовый месяц и reset
+
+- В `/[lang]/settings` можно начать новый финансовый месяц от даты зарплаты
+- При старте месяца одной Postgres RPC-операцией создаётся доход “зарплата”, активный период считается от выбранной даты, а лимиты бюджетов копируются в новый период
+- История не удаляется: старые транзакции остаются доступными через фильтр месяца
+- Reset финансового отчёта очищает транзакции, бюджеты, кредитки, финансовые периоды и недельные отчёты; категории сохраняются для работы форм
+
+## Скрипты
+
+- `npm run dev` — разработка
+- `npm run build` — production build
+- `npm run db:push` — миграции Supabase
+
+## Проверка мобильной версии
+
+1. Запустите `npm run dev`
+2. Откройте `/ru` или `/en` в viewport 320px, 375px и 430px
+3. Проверьте dashboard, `/finances`, `/notes`, `/tasks`, `/bookmarks`, `/documents`, `/ai-assessment`, `/settings`
+4. Убедитесь, что нет горизонтальной прокрутки, нижнее меню доступно, формы и карточки не выходят за экран
+
+## Документация
+
+- [docs/DEVELOPMENT_PLAN.md](docs/DEVELOPMENT_PLAN.md)
+- [docs/DEPLOY.md](docs/DEPLOY.md)
