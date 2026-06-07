@@ -14,5 +14,6 @@ major_version = 17
 
 [auth]
 enabled = true
+# Local only. In Supabase Dashboard set production Site URL to https://personalhub-pi.vercel.app
 site_url = "http://localhost:3000"
-additional_redirect_urls = ["http://localhost:3000"]
+additional_redirect_urls = ["http://localhost:3000", "https://personalhub-pi.vercel.app/**"]

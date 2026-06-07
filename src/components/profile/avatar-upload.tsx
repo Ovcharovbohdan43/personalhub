@@ -1,4 +1,4 @@
-﻿'use client';
+'use client';
 
 import { useActionState } from 'react';
 import { uploadAvatarAction, type ActionState } from '@/modules/profile/actions';

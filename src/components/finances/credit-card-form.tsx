@@ -1,4 +1,4 @@
-﻿'use client';
+'use client';
 
 import { useActionState, useEffect, useRef } from 'react';
 import { CreditCard } from 'lucide-react';

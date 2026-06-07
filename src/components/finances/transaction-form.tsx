@@ -1,4 +1,4 @@
-﻿'use client';
+'use client';
 
 import { useEffect, useRef, useActionState } from 'react';
 import { createTransactionAction, type ActionState } from '@/modules/finances/actions';

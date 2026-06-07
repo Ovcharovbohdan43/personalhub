@@ -1,6 +1,7 @@
 'use server';
 
 import { createClient } from '@/lib/supabase/server';
+import { getSiteUrl } from '@/lib/site-url';
 import { redirect } from 'next/navigation';
 import { z } from 'zod';
 import { getServerLocale } from '@/lib/locale';
@@ -59,7 +60,10 @@ export async function registerAction(_prev: AuthState, formData: FormData): Prom
   const { error } = await supabase.auth.signUp({
     email: parsed.data.email,
     password: parsed.data.password,
-    options: { data: { display_name: parsed.data.displayName } },
+    options: {
+      data: { display_name: parsed.data.displayName },
+      emailRedirectTo: `${getSiteUrl()}${withLocale(locale, '/')}`,
+    },
   });
   if (error) return { error: error.message };
 
@@ -82,8 +86,35 @@ export async function forgotPasswordAction(_prev: AuthState, formData: FormData)
 
   const supabase = await createClient();
   const { error } = await supabase.auth.resetPasswordForEmail(email.data, {
-    redirectTo: `${process.env.NEXT_PUBLIC_SITE_URL ?? 'http://localhost:3000'}${withLocale(locale, '/login')}`,
+    redirectTo: `${getSiteUrl()}${withLocale(locale, '/reset-password')}`,
   });
   if (error) return { error: error.message };
   return {};
+}
+
+export async function resetPasswordAction(_prev: AuthState, formData: FormData): Promise<AuthState> {
+  const locale = await resolveLocale(formData);
+  const t = getDictionary(locale);
+
+  const resetSchema = z
+    .object({
+      password: z.string().min(6, t.validation.minPassword),
+      confirmPassword: z.string().min(6, t.validation.minPassword),
+    })
+    .refine((data) => data.password === data.confirmPassword, {
+      message: t.validation.passwordMismatch,
+      path: ['confirmPassword'],
+    });
+
+  const parsed = resetSchema.safeParse({
+    password: formData.get('password'),
+    confirmPassword: formData.get('confirmPassword'),
+  });
+  if (!parsed.success) return { error: parsed.error.issues[0]?.message ?? t.validation.validationError };
+
+  const supabase = await createClient();
+  const { error } = await supabase.auth.updateUser({ password: parsed.data.password });
+  if (error) return { error: error.message };
+
+  redirect(withLocale(locale, '/'));
 }

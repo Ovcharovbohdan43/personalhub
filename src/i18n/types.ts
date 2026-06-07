@@ -52,6 +52,11 @@ export type Dictionary = {
     | 'backToLogin'
     | 'resetPassword'
     | 'resetHint'
+    | 'newPassword'
+    | 'confirmPassword'
+    | 'newPasswordHint'
+    | 'savePassword'
+    | 'savingPassword'
     | 'email'
     | 'password'
     | 'displayName',

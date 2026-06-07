@@ -12,6 +12,7 @@ import {
 const AUTH_ROUTES = ['/login', '/register', '/forgot-password'];
 const PROTECTED_PATHS = [
   '/',
+  '/reset-password',
   '/finances',
   '/notes',
   '/tasks',
@@ -49,6 +50,10 @@ export async function updateSession(request: NextRequest) {
   const { locale: pathLocale, path: strippedPath } = stripLocale(pathname);
 
   if (!pathLocale) {
+    if (pathname.startsWith('/auth/')) {
+      return NextResponse.next({ request });
+    }
+
     const url = request.nextUrl.clone();
     url.pathname = withLocale(savedLocale, pathname);
     const response = NextResponse.redirect(url);

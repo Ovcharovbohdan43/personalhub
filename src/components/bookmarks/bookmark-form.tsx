@@ -1,4 +1,4 @@
-﻿'use client';
+'use client';
 
 import { useActionState } from 'react';
 import { createBookmarkAction, type ActionState } from '@/modules/bookmarks/actions';
