@@ -10,6 +10,7 @@ import {
 } from '@/i18n/config';
 
 const AUTH_ROUTES = ['/login', '/register', '/forgot-password'];
+const RECOVERY_COOKIE = 'personal-hub-password-recovery';
 const PROTECTED_PATHS = [
   '/',
   '/reset-password',
@@ -48,6 +49,7 @@ export async function updateSession(request: NextRequest) {
   const { pathname } = request.nextUrl;
   const savedLocale = getSavedLocale(request);
   const { locale: pathLocale, path: strippedPath } = stripLocale(pathname);
+  const hasPendingPasswordRecovery = request.cookies.get(RECOVERY_COOKIE)?.value === '1';
 
   if (!pathLocale) {
     if (pathname.startsWith('/auth/')) {
@@ -80,6 +82,13 @@ export async function updateSession(request: NextRequest) {
   );
 
   const { data: { user } } = await supabase.auth.getUser();
+
+  if (user && hasPendingPasswordRecovery && strippedPath !== '/reset-password') {
+    const url = request.nextUrl.clone();
+    url.pathname = withLocale(pathLocale, '/reset-password');
+    url.search = '';
+    return NextResponse.redirect(url);
+  }
 
   if (!user && isProtectedRoute(strippedPath)) {
     const url = request.nextUrl.clone();

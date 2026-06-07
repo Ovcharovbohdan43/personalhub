@@ -32,14 +32,14 @@ export default async function FinancesPage({
       <Suspense fallback={null}>
         <FinanceFilters categories={categories} />
       </Suspense>
-      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+      <div className="grid min-w-0 gap-4 sm:grid-cols-2 lg:grid-cols-3">
         <Card className="min-w-0 p-4 sm:p-5"><p className="text-sm text-muted-foreground">{dict.common.income}</p><h2 className="mt-2 break-words text-2xl font-bold sm:text-3xl">{formatMoney(income)}</h2></Card>
         <Card className="min-w-0 p-4 sm:p-5"><p className="text-sm text-muted-foreground">{dict.common.expense}</p><h2 className="mt-2 break-words text-2xl font-bold sm:text-3xl">{formatMoney(expense)}</h2></Card>
         <Card className="min-w-0 p-4 sm:p-5"><p className="text-sm text-muted-foreground">{dict.common.balance}</p><h2 className="mt-2 break-words text-2xl font-bold sm:text-3xl">{formatMoney(balance)}</h2></Card>
       </div>
-      <section className="mt-5 grid gap-5 xl:grid-cols-[1fr_360px]">
+      <section className="mt-5 grid min-w-0 gap-5 xl:grid-cols-[minmax(0,1fr)_360px]">
         <CreditCardList cards={creditCards} />
-        <div className="space-y-5">
+        <div className="min-w-0 space-y-5">
           <Card className="min-w-0 p-4 sm:p-5">
             <p className="text-sm text-muted-foreground">{dict.finances.totalDebt}</p>
             <h2 className="mt-2 break-words text-2xl font-bold text-red-300 sm:text-3xl">{formatMoney(creditSummary.totalDebt)}</h2>
@@ -52,14 +52,14 @@ export default async function FinancesPage({
           <CreditCardForm />
         </div>
       </section>
-      <div className="mt-5 grid gap-5 xl:grid-cols-[1fr_360px]">
-        <div className="grid gap-5 xl:grid-cols-2">
+      <div className="mt-5 grid min-w-0 gap-5 xl:grid-cols-[minmax(0,1fr)_360px]">
+        <div className="grid min-w-0 gap-5 xl:grid-cols-2">
           <Card>
             <CardHeader><CardTitle>{dict.finances.budgetsByCategory}</CardTitle></CardHeader>
             <CardContent className="space-y-4">
               {spentByCategory.length ? spentByCategory.map((c) => (
                 <div key={c.id} className="min-w-0">
-                  <div className="mb-2 flex flex-wrap justify-between gap-2 text-sm"><span className="min-w-0 truncate">{c.name}</span><span className="shrink-0">{formatMoney(c.spent)}{c.limit ? ` ${dict.finances.ofLimit} ${formatMoney(c.limit)}` : ''}</span></div>
+                  <div className="mb-2 flex flex-wrap justify-between gap-2 text-sm"><span className="min-w-0 truncate">{c.name}</span><span className="min-w-0 break-words text-right">{formatMoney(c.spent)}{c.limit ? ` ${dict.finances.ofLimit} ${formatMoney(c.limit)}` : ''}</span></div>
                   <div className="h-2 rounded-full bg-muted"><div className="h-2 rounded-full bg-green-500" style={{ width: `${c.percent}%` }} /></div>
                 </div>
               )) : (
@@ -94,7 +94,7 @@ export default async function FinancesPage({
             </CardContent>
           </Card>
         </div>
-        <div className="space-y-5">
+        <div className="min-w-0 space-y-5">
           <TransactionForm categories={categories} creditCards={creditCards} />
           <BudgetForm categories={categories} />
         </div>

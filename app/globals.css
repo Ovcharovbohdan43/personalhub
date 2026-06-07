@@ -23,8 +23,9 @@
   --destructive: 0 72% 51%; --destructive-foreground: 0 0% 100%;
 }
 * { border-color: hsl(var(--border)); }
-html { overflow-x: hidden; }
-body { overflow-x: hidden; background: radial-gradient(circle at top left, rgba(124,58,237,.16), transparent 35%), hsl(var(--background)); color: hsl(var(--foreground)); }
+html { width: 100%; max-width: 100%; overflow-x: hidden; }
+body { width: 100%; max-width: 100%; overflow-x: hidden; background: radial-gradient(circle at top left, rgba(124,58,237,.16), transparent 35%), hsl(var(--background)); color: hsl(var(--foreground)); }
+input, select, textarea, button { max-width: 100%; }
 @layer components {
   .glass { @apply rounded-2xl border bg-card/75 shadow-glow backdrop-blur-xl; }
   .nav-item { @apply flex items-center gap-3 rounded-xl px-3 py-2 text-sm text-muted-foreground transition hover:bg-muted hover:text-foreground; }

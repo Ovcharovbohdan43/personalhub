@@ -32,8 +32,8 @@ export function MobileNav() {
   };
 
   return (
-    <nav className="fixed bottom-0 left-0 right-0 z-50 overflow-x-auto border-t bg-card/95 px-2 pt-2 pb-[calc(0.5rem+env(safe-area-inset-bottom))] backdrop-blur lg:hidden">
-      <div className="mx-auto flex w-max max-w-full justify-center gap-2">
+    <nav className="fixed inset-x-0 bottom-0 z-50 border-t bg-card/95 px-3 pt-2 pb-[calc(0.5rem+env(safe-area-inset-bottom))] backdrop-blur lg:hidden">
+      <div className="mx-auto grid w-full max-w-[430px] grid-cols-7 gap-1">
         {items.map(([href, Icon]) => {
           const active = href === '/' ? path === '/' : path.startsWith(href);
           return (
@@ -42,7 +42,7 @@ export function MobileNav() {
               href={localize(href)}
               title={labels[href]}
               aria-label={labels[href]}
-              className={`grid h-11 w-11 shrink-0 place-items-center rounded-xl ${active ? 'bg-primary/15 text-primary' : 'text-muted-foreground'}`}
+              className={`grid h-11 min-w-0 place-items-center rounded-xl ${active ? 'bg-primary/15 text-primary' : 'text-muted-foreground'}`}
             >
               <Icon size={20} />
             </Link>

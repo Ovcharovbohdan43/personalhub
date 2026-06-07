@@ -1,5 +1,6 @@
 'use server';
 
+import { cookies } from 'next/headers';
 import { createClient } from '@/lib/supabase/server';
 import { getSiteUrl } from '@/lib/site-url';
 import { redirect } from 'next/navigation';
@@ -7,6 +8,8 @@ import { z } from 'zod';
 import { getServerLocale } from '@/lib/locale';
 import { isLocale, withLocale } from '@/i18n/config';
 import { getDictionary } from '@/i18n/get-dictionary';
+
+const RECOVERY_COOKIE = 'personal-hub-password-recovery';
 
 async function resolveLocale(formData: FormData) {
   const fromForm = formData.get('locale');
@@ -115,6 +118,9 @@ export async function resetPasswordAction(_prev: AuthState, formData: FormData):
   const supabase = await createClient();
   const { error } = await supabase.auth.updateUser({ password: parsed.data.password });
   if (error) return { error: error.message };
+
+  const cookieStore = await cookies();
+  cookieStore.delete(RECOVERY_COOKIE);
 
   redirect(withLocale(locale, '/'));
 }

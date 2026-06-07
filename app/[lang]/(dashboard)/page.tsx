@@ -135,11 +135,11 @@ export default async function DashboardPage({ params }: { params: Promise<{ lang
         <Card>
           <CardHeader><CardTitle>{t.dashboard.quickActions}</CardTitle></CardHeader>
           <CardContent className="grid gap-3">
-            <Link href={withLocale(locale, '/finances')}><Button className="w-full justify-start bg-green-600"><Plus size={16} />{t.dashboard.addExpense}</Button></Link>
-            <Link href={withLocale(locale, '/notes')}><Button className="w-full justify-start bg-yellow-600"><Plus size={16} />{t.dashboard.newNote}</Button></Link>
-            <Link href={withLocale(locale, '/tasks')}><Button className="w-full justify-start bg-blue-600"><Plus size={16} />{t.dashboard.newTask}</Button></Link>
-            <Link href={withLocale(locale, '/bookmarks')}><Button className="w-full justify-start"><Plus size={16} />{t.dashboard.newLink}</Button></Link>
-            <Link href={withLocale(locale, '/documents')}><Button className="w-full justify-start bg-slate-700"><FileText size={16} />{t.dashboard.document}</Button></Link>
+            <Link className="block min-w-0" href={withLocale(locale, '/finances')}><Button className="w-full justify-start bg-green-600"><Plus className="shrink-0" size={16} /><span className="min-w-0 truncate">{t.dashboard.addExpense}</span></Button></Link>
+            <Link className="block min-w-0" href={withLocale(locale, '/notes')}><Button className="w-full justify-start bg-yellow-600"><Plus className="shrink-0" size={16} /><span className="min-w-0 truncate">{t.dashboard.newNote}</span></Button></Link>
+            <Link className="block min-w-0" href={withLocale(locale, '/tasks')}><Button className="w-full justify-start bg-blue-600"><Plus className="shrink-0" size={16} /><span className="min-w-0 truncate">{t.dashboard.newTask}</span></Button></Link>
+            <Link className="block min-w-0" href={withLocale(locale, '/bookmarks')}><Button className="w-full justify-start"><Plus className="shrink-0" size={16} /><span className="min-w-0 truncate">{t.dashboard.newLink}</span></Button></Link>
+            <Link className="block min-w-0" href={withLocale(locale, '/documents')}><Button className="w-full justify-start bg-slate-700"><FileText className="shrink-0" size={16} /><span className="min-w-0 truncate">{t.dashboard.document}</span></Button></Link>
           </CardContent>
         </Card>
       </section>
