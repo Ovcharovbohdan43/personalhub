@@ -52,7 +52,7 @@ export async function updateSession(request: NextRequest) {
   const hasPendingPasswordRecovery = request.cookies.get(RECOVERY_COOKIE)?.value === '1';
 
   if (!pathLocale) {
-    if (pathname.startsWith('/auth/')) {
+    if (pathname.startsWith('/auth/') || pathname.startsWith('/api/')) {
       return NextResponse.next({ request });
     }
 

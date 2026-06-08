@@ -43,3 +43,12 @@ export async function setTelegramWebhook(url: string, secretToken: string) {
     allowed_updates: ['message'],
   });
 }
+
+export async function getTelegramWebhookInfo() {
+  return telegramRequest<{
+    url?: string;
+    has_custom_certificate?: boolean;
+    pending_update_count?: number;
+    last_error_message?: string | null;
+  }>('getWebhookInfo', {});
+}

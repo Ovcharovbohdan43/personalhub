@@ -10,8 +10,13 @@ export async function POST(request: NextRequest) {
     }
   }
 
-  const update = (await request.json()) as TelegramUpdate;
-  await handleTelegramUpdate(update);
-
-  return NextResponse.json({ ok: true });
+  try {
+    const update = (await request.json()) as TelegramUpdate;
+    await handleTelegramUpdate(update);
+    return NextResponse.json({ ok: true });
+  } catch (error) {
+    console.error('Telegram webhook error:', error);
+    // Always return 200 so Telegram does not keep retrying forever.
+    return NextResponse.json({ ok: true });
+  }
 }
