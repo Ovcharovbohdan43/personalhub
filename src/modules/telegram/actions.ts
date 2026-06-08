@@ -12,7 +12,8 @@ export type TelegramLinkState = {
 };
 
 function createLinkToken() {
-  return crypto.randomBytes(16).toString('base64url');
+  // Telegram /start payload allows only A-Z, a-z, 0-9, _ and - (max 64 chars).
+  return crypto.randomBytes(18).toString('base64url').replace(/[^A-Za-z0-9_-]/g, 'x').slice(0, 32);
 }
 
 export async function createTelegramLinkTokenAction(

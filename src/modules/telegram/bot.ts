@@ -67,6 +67,13 @@ function normalizeTaskTitle(text: string) {
   return text.replace(/^\/add(@\w+)?\s*/i, '').trim();
 }
 
+function parseStartToken(text: string) {
+  const trimmed = text.trim();
+  if (!/^\/start(?:@\w+)?(?:\s|$)/i.test(trimmed)) return undefined;
+  const token = trimmed.replace(/^\/start(?:@\w+)?\s*/i, '').trim();
+  return token || undefined;
+}
+
 function formatTaskList(tasks: Task[], locale: Locale, title: string) {
   const lines = tasks.slice(0, 10).map((task, index) => {
     const due = task.due_date ? ` (${task.due_date})` : '';
@@ -191,29 +198,30 @@ export async function handleTelegramUpdate(update: TelegramUpdate) {
   const text = message?.text?.trim();
   if (!message || !text || message.chat.type !== 'private') return;
 
-  const [command, maybeToken] = text.split(/\s+/, 2);
-  if (command.startsWith('/start')) {
-    await handleStart(message, maybeToken);
+  const startToken = parseStartToken(text);
+  if (startToken !== undefined || /^\/start(?:@\w+)?$/i.test(text)) {
+    await handleStart(message, startToken);
     return;
   }
 
+  const command = text.split(/\s+/)[0];
   const connection = await findConnection(message.chat.id);
   if (!connection) {
     await sendTelegramMessage(message.chat.id, COPY.ru.notLinked);
     return;
   }
 
-  if (command.startsWith('/help')) {
+  if (command?.startsWith('/help')) {
     await sendTelegramMessage(connection.chat_id, COPY[connection.preferred_locale].help);
     return;
   }
 
-  if (command.startsWith('/tasks')) {
+  if (command?.startsWith('/tasks')) {
     await sendOpenTasks(connection);
     return;
   }
 
-  const title = command.startsWith('/add') ? normalizeTaskTitle(text) : text;
+  const title = command?.startsWith('/add') ? normalizeTaskTitle(text) : text;
   await addTaskFromMessage(connection, title);
 }
 
