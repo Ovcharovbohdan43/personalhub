@@ -1,4 +1,4 @@
-export type Profile = { id: string; display_name: string | null; avatar_url: string | null; bio: string | null; created_at: string; updated_at: string };
+export type Profile = { id: string; display_name: string | null; avatar_url: string | null; bio: string | null; preferred_locale: 'ru' | 'en'; created_at: string; updated_at: string };
 export type ExpenseCategory = { id: string; user_id: string; name: string; color: string; icon: string | null; created_at: string };
 export type Transaction = { id: string; user_id: string; category_id: string | null; credit_card_id: string | null; amount: number; currency: string; type: 'income' | 'expense'; occurred_on: string; note: string | null; created_at: string; expense_categories?: Pick<ExpenseCategory, 'name' | 'color'> | null; credit_cards?: Pick<CreditCard, 'name'> | null };
 export type Budget = { id: string; user_id: string; category_id: string; limit_amount: number; period_start: string; period_end: string; created_at: string; expense_categories?: Pick<ExpenseCategory, 'name' | 'color'> | null };
@@ -10,3 +10,5 @@ export type UserDocument = { id: string; user_id: string; title: string; descrip
 export type CreditCard = { id: string; user_id: string; name: string; credit_limit: number; current_balance: number; monthly_payment: number; statement_day: number | null; due_day: number | null; is_archived: boolean; created_at: string; updated_at: string };
 export type AppNotification = { id: string; user_id: string; type: 'weekly_report'; title: string; body: string; payload: Record<string, unknown>; period_start: string | null; period_end: string | null; read_at: string | null; created_at: string };
 export type FinancePeriod = { id: string; user_id: string; period_start: string; period_end: string; salary_amount: number; salary_transaction_id: string | null; note: string | null; created_at: string };
+export type TelegramConnection = { id: string; user_id: string; chat_id: number; telegram_user_id: number | null; username: string | null; first_name: string | null; preferred_locale: 'ru' | 'en'; reminder_enabled: boolean; reminder_hour: number; linked_at: string; created_at: string; updated_at: string };
+export type TelegramLinkToken = { id: string; user_id: string; token: string; preferred_locale: 'ru' | 'en'; expires_at: string; used_at: string | null; created_at: string };

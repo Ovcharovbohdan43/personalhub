@@ -24,7 +24,7 @@ export default async function DashboardPage({ params }: { params: Promise<{ lang
     getNotes(),
     getTasks(),
     getBookmarks(),
-    getNotifications(),
+    getNotifications(locale),
   ]);
 
   const priorityLabels = getPriorityLabels(t);

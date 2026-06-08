@@ -5,11 +5,17 @@ import { Button } from '@/components/ui/button';
 import { useTheme } from '@/components/providers/theme-provider';
 import { useLanguage } from '@/components/providers/language-provider';
 import { FinanceSettingsPanel } from '@/components/settings/finance-settings-panel';
+import { TelegramSettingsPanel } from '@/components/settings/telegram-settings-panel';
 import type { Locale } from '@/i18n/config';
+import { syncSystemLocaleAction } from '@/modules/settings/actions';
 
 export default function SettingsPage() {
   const { theme, setTheme } = useTheme();
   const { dictionary: t, locale, setLocale } = useLanguage();
+  const changeLocale = (nextLocale: Locale) => {
+    setLocale(nextLocale);
+    void syncSystemLocaleAction(nextLocale);
+  };
 
   return (
     <div className="mx-auto max-w-2xl">
@@ -23,14 +29,14 @@ export default function SettingsPage() {
         <div className="grid gap-3 sm:flex">
           <Button
             type="button"
-            onClick={() => setLocale('ru' as Locale)}
+            onClick={() => changeLocale('ru' as Locale)}
             className={`w-full sm:w-auto ${locale === 'ru' ? '' : 'bg-muted text-foreground'}`}
           >
             {t.settings.russian}
           </Button>
           <Button
             type="button"
-            onClick={() => setLocale('en' as Locale)}
+            onClick={() => changeLocale('en' as Locale)}
             className={`w-full sm:w-auto ${locale === 'en' ? '' : 'bg-muted text-foreground'}`}
           >
             {t.settings.english}
@@ -63,6 +69,9 @@ export default function SettingsPage() {
 
       <div className="mt-5">
         <FinanceSettingsPanel />
+      </div>
+      <div className="mt-5">
+        <TelegramSettingsPanel />
       </div>
     </div>
   );

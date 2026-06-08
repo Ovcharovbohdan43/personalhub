@@ -106,6 +106,11 @@ const en: Dictionary = {
     resetFinanceHint: 'Deletes transactions, budgets, credit cards, financial periods and weekly reports. Categories are kept so forms continue to work.',
     resetConfirmationPlaceholder: 'Type RESET to confirm',
     resetFinanceButton: 'Clear finance data',
+    telegramTitle: 'Telegram bot',
+    telegramHint: 'Connect Telegram to receive daily task reminders and add tasks by sending messages to the bot.',
+    telegramGenerateCode: 'Generate link code',
+    telegramCodeHint: 'Send this command to your Telegram bot. The code expires in 30 minutes.',
+    telegramOpenBot: 'Open Telegram bot',
   },
   notifications: {
     title: 'Notifications',

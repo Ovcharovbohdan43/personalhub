@@ -106,6 +106,11 @@ const ru: Dictionary = {
     resetFinanceHint: 'Удалит транзакции, бюджеты, кредитки, финансовые периоды и недельные отчёты. Категории сохранятся, чтобы формы продолжили работать.',
     resetConfirmationPlaceholder: 'Введите RESET для подтверждения',
     resetFinanceButton: 'Очистить финансовые данные',
+    telegramTitle: 'Telegram бот',
+    telegramHint: 'Подключите Telegram, чтобы получать ежедневные напоминания о делах и добавлять задачи сообщением боту.',
+    telegramGenerateCode: 'Сгенерировать код привязки',
+    telegramCodeHint: 'Отправьте эту команду вашему Telegram боту. Код действует 30 минут.',
+    telegramOpenBot: 'Открыть Telegram бота',
   },
   notifications: {
     title: 'Уведомления',
