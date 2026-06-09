@@ -1,4 +1,4 @@
-﻿-- Pending user input for multi-step Telegram bot flows (rename, amounts, etc.)
+-- Pending user input for multi-step Telegram bot flows (rename, amounts, etc.)
 
 create table if not exists public.telegram_pending_actions (
   chat_id bigint primary key,
