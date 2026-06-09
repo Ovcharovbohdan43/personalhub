@@ -41,87 +41,93 @@ function parseAmountNote(text: string) {
 }
 
 async function handlePendingInput(ctx: BotContext, text: string) {
+  if (parseMenuButton(ctx.locale, text)) return false;
+
   const pending = await getPendingAction(ctx.supabase, ctx.chatId);
   if (!pending || pending.user_id !== ctx.connection.user_id) return false;
 
   const copy = COPY[ctx.locale];
+  const keyboard = mainMenuKeyboard(ctx.locale);
 
-  try {
-    switch (pending.action) {
-      case 'add_task':
-        await addTask(ctx, text);
-        break;
-      case 'add_expense': {
-        const parsed = parseAmountNote(text);
-        if (!parsed) {
-          await sendTelegramMessage(ctx.chatId, copy.promptAddExpense);
-          return true;
-        }
-        await addTransaction(ctx, { txType: 'expense', amount: parsed.amount, note: parsed.note });
-        break;
+  switch (pending.action) {
+    case 'add_task':
+      await addTask(ctx, text);
+      await clearPendingAction(ctx.supabase, ctx.chatId);
+      return true;
+    case 'add_expense': {
+      const parsed = parseAmountNote(text);
+      if (!parsed) {
+        await sendTelegramMessage(ctx.chatId, copy.promptAddExpense, keyboard);
+        return true;
       }
-      case 'add_income': {
-        const parsed = parseAmountNote(text);
-        if (!parsed) {
-          await sendTelegramMessage(ctx.chatId, copy.promptAddIncome);
-          return true;
-        }
-        await addTransaction(ctx, { txType: 'income', amount: parsed.amount, note: parsed.note });
-        break;
-      }
-      case 'rename_task':
-        if (pending.entity_id) await editTaskTitleById(ctx, pending.entity_id, text);
-        break;
-      case 'due_task':
-        if (pending.entity_id) {
-          if (!/^\d{4}-\d{2}-\d{2}$/.test(text.trim())) {
-            await sendTelegramMessage(ctx.chatId, copy.invalidDate);
-            return true;
-          }
-          await editTaskDueDateById(ctx, pending.entity_id, text.trim());
-        }
-        break;
-      case 'tx_amount':
-        if (pending.entity_id) await editTransactionById(ctx, pending.entity_id, 'amount', text);
-        break;
-      case 'tx_note':
-        if (pending.entity_id) await editTransactionById(ctx, pending.entity_id, 'note', text);
-        break;
-      case 'tx_date':
-        if (pending.entity_id) await editTransactionById(ctx, pending.entity_id, 'date', text.trim());
-        break;
-      case 'budget_limit':
-        if (pending.entity_id) {
-          const amount = Number(text.replace(',', '.'));
-          if (!Number.isFinite(amount) || amount <= 0) {
-            await sendTelegramMessage(ctx.chatId, copy.invalidAmount);
-            return true;
-          }
-          await setBudgetByCategoryId(ctx, pending.entity_id, amount);
-        }
-        break;
-      case 'card_pay':
-        if (pending.entity_id) {
-          const amount = Number(text.replace(',', '.'));
-          if (!Number.isFinite(amount) || amount <= 0) {
-            await sendTelegramMessage(ctx.chatId, copy.invalidAmount);
-            return true;
-          }
-          await payCardById(ctx, pending.entity_id, amount);
-        }
-        break;
-      default:
-        break;
+      await addTransaction(ctx, { txType: 'expense', amount: parsed.amount, note: parsed.note });
+      await clearPendingAction(ctx.supabase, ctx.chatId);
+      return true;
     }
-  } finally {
-    await clearPendingAction(ctx.supabase, ctx.chatId);
+    case 'add_income': {
+      const parsed = parseAmountNote(text);
+      if (!parsed) {
+        await sendTelegramMessage(ctx.chatId, copy.promptAddIncome, keyboard);
+        return true;
+      }
+      await addTransaction(ctx, { txType: 'income', amount: parsed.amount, note: parsed.note });
+      await clearPendingAction(ctx.supabase, ctx.chatId);
+      return true;
+    }
+    case 'rename_task':
+      if (pending.entity_id) await editTaskTitleById(ctx, pending.entity_id, text);
+      await clearPendingAction(ctx.supabase, ctx.chatId);
+      return true;
+    case 'due_task':
+      if (!/^\d{4}-\d{2}-\d{2}$/.test(text.trim())) {
+        await sendTelegramMessage(ctx.chatId, copy.invalidDate, keyboard);
+        return true;
+      }
+      if (pending.entity_id) await editTaskDueDateById(ctx, pending.entity_id, text.trim());
+      await clearPendingAction(ctx.supabase, ctx.chatId);
+      return true;
+    case 'tx_amount':
+      if (pending.entity_id) await editTransactionById(ctx, pending.entity_id, 'amount', text);
+      await clearPendingAction(ctx.supabase, ctx.chatId);
+      return true;
+    case 'tx_note':
+      if (pending.entity_id) await editTransactionById(ctx, pending.entity_id, 'note', text);
+      await clearPendingAction(ctx.supabase, ctx.chatId);
+      return true;
+    case 'tx_date':
+      if (pending.entity_id) await editTransactionById(ctx, pending.entity_id, 'date', text.trim());
+      await clearPendingAction(ctx.supabase, ctx.chatId);
+      return true;
+    case 'budget_limit': {
+      const amount = Number(text.replace(',', '.'));
+      if (!Number.isFinite(amount) || amount <= 0) {
+        await sendTelegramMessage(ctx.chatId, copy.invalidAmount, keyboard);
+        return true;
+      }
+      if (pending.entity_id) await setBudgetByCategoryId(ctx, pending.entity_id, amount);
+      await clearPendingAction(ctx.supabase, ctx.chatId);
+      return true;
+    }
+    case 'card_pay': {
+      const amount = Number(text.replace(',', '.'));
+      if (!Number.isFinite(amount) || amount <= 0) {
+        await sendTelegramMessage(ctx.chatId, copy.invalidAmount, keyboard);
+        return true;
+      }
+      if (pending.entity_id) await payCardById(ctx, pending.entity_id, amount);
+      await clearPendingAction(ctx.supabase, ctx.chatId);
+      return true;
+    }
+    default:
+      return false;
   }
-
-  return true;
 }
 
 async function startMenuAction(ctx: BotContext, action: MenuAction) {
   const copy = COPY[ctx.locale];
+  const keyboard = mainMenuKeyboard(ctx.locale);
+
+  await clearPendingAction(ctx.supabase, ctx.chatId);
 
   switch (action) {
     case 'tasks':
@@ -144,15 +150,15 @@ async function startMenuAction(ctx: BotContext, action: MenuAction) {
       return;
     case 'add_task':
       await setPendingAction(ctx.supabase, { chatId: ctx.chatId, userId: ctx.connection.user_id, action: 'add_task' });
-      await sendTelegramMessage(ctx.chatId, copy.promptAddTask, mainMenuKeyboard(ctx.locale));
+      await sendTelegramMessage(ctx.chatId, copy.promptAddTask, keyboard);
       return;
     case 'add_expense':
       await setPendingAction(ctx.supabase, { chatId: ctx.chatId, userId: ctx.connection.user_id, action: 'add_expense' });
-      await sendTelegramMessage(ctx.chatId, copy.promptAddExpense, mainMenuKeyboard(ctx.locale));
+      await sendTelegramMessage(ctx.chatId, copy.promptAddExpense, keyboard);
       return;
     case 'add_income':
       await setPendingAction(ctx.supabase, { chatId: ctx.chatId, userId: ctx.connection.user_id, action: 'add_income' });
-      await sendTelegramMessage(ctx.chatId, copy.promptAddIncome, mainMenuKeyboard(ctx.locale));
+      await sendTelegramMessage(ctx.chatId, copy.promptAddIncome, keyboard);
       return;
   }
 }
@@ -216,26 +222,29 @@ export async function dispatchParsedCommand(ctx: BotContext, command: ParsedComm
     case 'card_archive':
       await archiveCard(ctx, command.index);
       return;
-    case 'plain_text':
+    case 'plain_text': {
       if (command.text.startsWith('/')) {
         await sendTelegramMessage(ctx.chatId, COPY[ctx.locale].invalidCommand, mainMenuKeyboard(ctx.locale));
         return;
       }
+      const pending = await getPendingAction(ctx.supabase, ctx.chatId);
+      if (pending) return;
       await addTask(ctx, command.text);
       return;
+    }
     default:
       await sendTelegramMessage(ctx.chatId, COPY[ctx.locale].invalidCommand, mainMenuKeyboard(ctx.locale));
   }
 }
 
 export async function handleLinkedMessage(ctx: BotContext, text: string) {
-  if (await handlePendingInput(ctx, text)) return;
-
   const menuAction = parseMenuButton(ctx.locale, text);
   if (menuAction) {
     await startMenuAction(ctx, menuAction);
     return;
   }
+
+  if (await handlePendingInput(ctx, text)) return;
 
   const parsed = parseTelegramCommand(text);
   if (parsed.kind === 'start') {

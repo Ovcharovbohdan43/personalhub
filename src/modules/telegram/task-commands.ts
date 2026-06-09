@@ -1,6 +1,6 @@
 ﻿import { COPY } from '@/modules/telegram/copy';
 import { escapeHtml } from '@/modules/telegram/formatters';
-import { navRow, taskItemKeyboard, tasksFilterKeyboard } from '@/modules/telegram/keyboards';
+import { mainMenuKeyboard, navRow, taskItemKeyboard, tasksFilterKeyboard } from '@/modules/telegram/keyboards';
 import { sendTelegramMessage } from '@/modules/telegram/telegram-api';
 import type { BotContext } from '@/modules/telegram/types';
 import type { Task } from '@/types/database';
@@ -90,6 +90,7 @@ export async function addTask(ctx: BotContext, title: string) {
   await sendTelegramMessage(
     ctx.chatId,
     `${COPY[ctx.locale].added} <b>${escapeHtml(cleanTitle)}</b>`,
+    mainMenuKeyboard(ctx.locale),
   );
 }
 

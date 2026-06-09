@@ -6,6 +6,7 @@ import {
   formatMoney,
 } from '@/modules/telegram/formatters';
 import {
+  mainMenuKeyboard,
   budgetItemKeyboard,
   cardItemKeyboard,
   navRow,
@@ -167,6 +168,7 @@ export async function addTransaction(
   await sendTelegramMessage(
     ctx.chatId,
     `${copy.txAdded} ${input.txType} ${formatMoney(input.amount)} — <b>${escapeHtml(input.note)}</b>`,
+    mainMenuKeyboard(ctx.locale),
   );
 }
 

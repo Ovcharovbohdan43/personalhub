@@ -7,8 +7,8 @@ export const COPY = {
     notLinked: 'Сначала подключи Telegram в Personal Hub: Settings → Telegram, затем отправь /start с кодом.',
     help: 'Используйте кнопки меню внизу экрана. Текстовые команды тоже работают.',
     promptAddTask: 'Напишите название нового дела:',
-    promptAddExpense: 'Отправьте расход в формате: 12.50 Обед',
-    promptAddIncome: 'Отправьте доход в формате: 1000 Зарплата',
+    promptAddExpense: 'Отправьте: сумма название (например: 5 энергетики)',
+    promptAddIncome: 'Отправьте: сумма название (например: 1000 Зарплата)',
     promptRename: 'Напишите новое название:',
     promptDue: 'Отправьте дату в формате YYYY-MM-DD:',
     promptAmount: 'Отправьте новую сумму:',
@@ -54,8 +54,8 @@ export const COPY = {
     notLinked: 'Connect Telegram in Personal Hub first: Settings → Telegram, then send /start with the code.',
     help: 'Use the menu buttons at the bottom. Text commands still work too.',
     promptAddTask: 'Send the new task title:',
-    promptAddExpense: 'Send expense as: 12.50 Lunch',
-    promptAddIncome: 'Send income as: 1000 Salary',
+    promptAddExpense: 'Send: amount name (e.g. 5 energy drinks)',
+    promptAddIncome: 'Send: amount name (e.g. 1000 Salary)',
     promptRename: 'Send the new title:',
     promptDue: 'Send date as YYYY-MM-DD:',
     promptAmount: 'Send the new amount:',
@@ -96,3 +96,4 @@ export const COPY = {
     actionDone: 'Done',
   },
 } satisfies Record<Locale, Record<string, string>>;
+

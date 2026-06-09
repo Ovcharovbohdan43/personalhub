@@ -6,6 +6,7 @@
 - [2026-06-08] – Improved webhook diagnostics, `/start@botname` parsing, and troubleshooting docs.
 - [2026-06-09] – Added full task and finance command set for Telegram bot.
 - [2026-06-09] – Added button-based UX with reply menu and inline action buttons.
+- [2026-06-09] – Fixed: pending state when switching Income/Expense and transaction input no longer creates tasks.
 
 ## Purpose
 
@@ -23,7 +24,7 @@ Telegram integration lets users manage Personal Hub from a private chat using bu
 | Бюджеты | Budgets | Budget list |
 | Кредитки | Cards | Credit cards |
 | Добавить дело | Add task | Prompt for task title |
-| Расход | Expense | Prompt: `12.50 Обед` |
+| Расход | Expense | Prompt: `5 энергетики` |
 | Доход | Income | Prompt: `1000 Зарплата` |
 
 ### Inline buttons
@@ -70,7 +71,7 @@ NEXT_PUBLIC_TELEGRAM_BOT_USERNAME=
 1. After linking, bottom menu buttons appear.
 2. Tap **Задачи** → tasks list with inline buttons.
 3. Tap **Готово** on a task → status updates in app.
-4. Tap **Расход** → send `10.50 Coffee` → appears in Finances.
+4. Tap **Расход** → send `5 энергетики` → appears in Finances (not as a task).
 5. Tap **Отчёт** → income/expense summary.
 
 ## Troubleshooting
