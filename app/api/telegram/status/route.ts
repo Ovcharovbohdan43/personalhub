@@ -1,4 +1,5 @@
 import { NextResponse, type NextRequest } from 'next/server';
+import { getSiteUrl } from '@/lib/site-url';
 import { getTelegramWebhookInfo } from '@/modules/telegram/telegram-api';
 
 export const dynamic = 'force-dynamic';
@@ -14,7 +15,8 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({
       ok: true,
       webhook: info,
-      expectedUrl: `${process.env.NEXT_PUBLIC_SITE_URL ?? 'https://personalhub-pi.vercel.app'}/api/telegram/webhook`,
+      expectedUrl: `${getSiteUrl()}/api/telegram/webhook`,
+      siteUrl: getSiteUrl(),
       hasBotToken: Boolean(process.env.TELEGRAM_BOT_TOKEN),
       hasServiceRoleKey: Boolean(process.env.SUPABASE_SERVICE_ROLE_KEY),
       hasWebhookSecret: Boolean(process.env.TELEGRAM_WEBHOOK_SECRET),
