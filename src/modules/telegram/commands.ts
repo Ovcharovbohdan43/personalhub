@@ -8,6 +8,7 @@ import {
   editTransactionById,
   listBudgets,
   listCards,
+  promptExpenseCategory,
   listTransactions,
   payCard,
   payCardById,
@@ -54,13 +55,17 @@ async function handlePendingInput(ctx: BotContext, text: string) {
       await addTask(ctx, text);
       await clearPendingAction(ctx.supabase, ctx.chatId);
       return true;
+    case 'add_expense_category':
+      await promptExpenseCategory(ctx);
+      return true;
     case 'add_expense': {
       const parsed = parseAmountNote(text);
       if (!parsed) {
         await sendTelegramMessage(ctx.chatId, copy.promptAddExpense, keyboard);
         return true;
       }
-      await addTransaction(ctx, { txType: 'expense', amount: parsed.amount, note: parsed.note });
+      const categoryId = typeof pending.payload?.categoryId === 'string' ? pending.payload.categoryId : null;
+      await addTransaction(ctx, { txType: 'expense', amount: parsed.amount, note: parsed.note, categoryId });
       await clearPendingAction(ctx.supabase, ctx.chatId);
       return true;
     }
@@ -153,8 +158,8 @@ async function startMenuAction(ctx: BotContext, action: MenuAction) {
       await sendTelegramMessage(ctx.chatId, copy.promptAddTask, keyboard);
       return;
     case 'add_expense':
-      await setPendingAction(ctx.supabase, { chatId: ctx.chatId, userId: ctx.connection.user_id, action: 'add_expense' });
-      await sendTelegramMessage(ctx.chatId, copy.promptAddExpense, keyboard);
+      await setPendingAction(ctx.supabase, { chatId: ctx.chatId, userId: ctx.connection.user_id, action: 'add_expense_category' });
+      await promptExpenseCategory(ctx);
       return;
     case 'add_income':
       await setPendingAction(ctx.supabase, { chatId: ctx.chatId, userId: ctx.connection.user_id, action: 'add_income' });

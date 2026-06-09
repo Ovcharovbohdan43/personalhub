@@ -1,5 +1,5 @@
-﻿import type { Locale } from '@/i18n/config';
-import type { Budget, CreditCard, Task, Transaction } from '@/types/database';
+import type { Locale } from '@/i18n/config';
+import type { Budget, CreditCard, ExpenseCategory, Task, Transaction } from '@/types/database';
 import type { TelegramInlineKeyboardButton, TelegramReplyMarkup } from '@/modules/telegram/telegram-api';
 
 const MENU = {
@@ -26,6 +26,7 @@ const MENU = {
     budget: 'Лимит',
     refresh: 'Обновить',
     back: 'Меню',
+    uncategorized: 'Без категории',
   },
   en: {
     tasks: 'Tasks',
@@ -50,6 +51,7 @@ const MENU = {
     budget: 'Limit',
     refresh: 'Refresh',
     back: 'Menu',
+    uncategorized: 'No category',
   },
 } as const;
 
@@ -101,6 +103,18 @@ export function txItemKeyboard(locale: Locale, tx: Transaction): TelegramReplyMa
       { text: m.del, callback_data: `x:del:${id}` },
     ]],
   };
+}
+
+export function expenseCategoryKeyboard(locale: Locale, categories: ExpenseCategory[]): TelegramReplyMarkup {
+  const m = MENU[locale];
+  const rows: TelegramInlineKeyboardButton[][] = categories.slice(0, 20).map((category) => [
+    { text: category.name, callback_data: `xcat:${category.id}` },
+  ]);
+
+  rows.push([{ text: m.uncategorized, callback_data: 'xcat:none' }]);
+  rows.push([{ text: m.back, callback_data: 'nav:menu' }]);
+
+  return { inline_keyboard: rows };
 }
 
 export function cardItemKeyboard(locale: Locale, card: CreditCard): TelegramReplyMarkup {

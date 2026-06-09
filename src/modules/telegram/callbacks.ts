@@ -15,7 +15,7 @@ import {
   listTasks,
   updateTaskStatusById,
 } from '@/modules/telegram/task-commands';
-import { setPendingAction } from '@/modules/telegram/pending-actions';
+import { getPendingAction, setPendingAction } from '@/modules/telegram/pending-actions';
 import { answerCallbackQuery, sendTelegramMessage } from '@/modules/telegram/telegram-api';
 import { showMainMenu } from '@/modules/telegram/commands';
 import type { BotContext } from '@/modules/telegram/types';
@@ -92,6 +92,24 @@ export async function handleCallbackQuery(ctx: BotContext, callbackId: string, d
         });
         await sendTelegramMessage(ctx.chatId, copy.promptDue, mainMenuKeyboard(ctx.locale));
       }
+      await answerCallbackQuery(callbackId, copy.actionDone);
+      return;
+    }
+
+    if (prefix === 'xcat' && action) {
+      const pending = await getPendingAction(ctx.supabase, ctx.chatId);
+      if (!pending || pending.user_id !== ctx.connection.user_id || pending.action !== 'add_expense_category') {
+        await answerCallbackQuery(callbackId, copy.invalidCommand);
+        return;
+      }
+
+      await setPendingAction(ctx.supabase, {
+        chatId: ctx.chatId,
+        userId: ctx.connection.user_id,
+        action: 'add_expense',
+        payload: { categoryId: action === 'none' ? null : action },
+      });
+      await sendTelegramMessage(ctx.chatId, copy.promptAddExpense, mainMenuKeyboard(ctx.locale));
       await answerCallbackQuery(callbackId, copy.actionDone);
       return;
     }

@@ -6,9 +6,10 @@ import {
   formatMoney,
 } from '@/modules/telegram/formatters';
 import {
-  mainMenuKeyboard,
   budgetItemKeyboard,
   cardItemKeyboard,
+  expenseCategoryKeyboard,
+  mainMenuKeyboard,
   navRow,
   txItemKeyboard,
 } from '@/modules/telegram/keyboards';
@@ -33,6 +34,25 @@ async function fetchRecentTransactions(ctx: BotContext) {
 async function getTransactionByIndex(ctx: BotContext, index: number) {
   const transactions = await fetchRecentTransactions(ctx);
   return transactions[index - 1] ?? null;
+}
+
+export async function fetchExpenseCategories(ctx: BotContext) {
+  const { data } = await ctx.supabase
+    .from('expense_categories')
+    .select('*')
+    .eq('user_id', ctx.connection.user_id)
+    .order('name');
+
+  return (data ?? []) as ExpenseCategory[];
+}
+
+export async function promptExpenseCategory(ctx: BotContext) {
+  const categories = await fetchExpenseCategories(ctx);
+  await sendTelegramMessage(
+    ctx.chatId,
+    COPY[ctx.locale].promptExpenseCategory,
+    expenseCategoryKeyboard(ctx.locale, categories),
+  );
 }
 
 async function getOwnedTransaction(ctx: BotContext, txId: string) {
@@ -138,7 +158,7 @@ export async function listTransactions(ctx: BotContext) {
 
 export async function addTransaction(
   ctx: BotContext,
-  input: { txType: 'income' | 'expense'; amount: number; categoryName?: string; note: string },
+  input: { txType: 'income' | 'expense'; amount: number; categoryName?: string; categoryId?: string | null; note: string },
 ) {
   const copy = COPY[ctx.locale];
   let categoryId: string | null = null;
@@ -149,6 +169,22 @@ export async function addTransaction(
       await sendTelegramMessage(ctx.chatId, copy.categoryNotFound);
       return;
     }
+    categoryId = category.id;
+  }
+
+  if (input.categoryId) {
+    const { data: category } = await ctx.supabase
+      .from('expense_categories')
+      .select('id')
+      .eq('id', input.categoryId)
+      .eq('user_id', ctx.connection.user_id)
+      .maybeSingle();
+
+    if (!category) {
+      await sendTelegramMessage(ctx.chatId, copy.categoryNotFound, mainMenuKeyboard(ctx.locale));
+      return;
+    }
+
     categoryId = category.id;
   }
 
