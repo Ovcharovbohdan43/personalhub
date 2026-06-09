@@ -1,12 +1,13 @@
 ﻿import { COPY } from '@/modules/telegram/copy';
-import { escapeHtml, formatTaskList } from '@/modules/telegram/formatters';
+import { escapeHtml } from '@/modules/telegram/formatters';
+import { navRow, taskItemKeyboard, tasksFilterKeyboard } from '@/modules/telegram/keyboards';
 import { sendTelegramMessage } from '@/modules/telegram/telegram-api';
 import type { BotContext } from '@/modules/telegram/types';
 import type { Task } from '@/types/database';
 
-const LIST_LIMIT = 10;
+const LIST_LIMIT = 8;
 
-async function fetchOpenTasks(ctx: BotContext) {
+export async function fetchOpenTasks(ctx: BotContext) {
   const { data } = await ctx.supabase
     .from('tasks')
     .select('*')
@@ -37,16 +38,38 @@ async function getOpenTaskByIndex(ctx: BotContext, index: number) {
   return tasks[index - 1] ?? null;
 }
 
+async function getOwnedTask(ctx: BotContext, taskId: string) {
+  const { data } = await ctx.supabase
+    .from('tasks')
+    .select('*')
+    .eq('id', taskId)
+    .eq('user_id', ctx.connection.user_id)
+    .maybeSingle();
+
+  return data as Task | null;
+}
+
 export async function listTasks(ctx: BotContext, filter: 'open' | 'done') {
   const copy = COPY[ctx.locale];
   const tasks = filter === 'done' ? await fetchDoneTasks(ctx) : await fetchOpenTasks(ctx);
   const title = filter === 'done' ? copy.doneTasksTitle : copy.tasksTitle;
   const empty = filter === 'done' ? copy.emptyDoneTasks : copy.emptyTasks;
+  const refresh = filter === 'done' ? 'nav:tasks:done' : 'nav:tasks';
 
-  await sendTelegramMessage(
-    ctx.chatId,
-    tasks.length ? formatTaskList(tasks, title) : empty,
-  );
+  if (!tasks.length) {
+    await sendTelegramMessage(ctx.chatId, empty, tasksFilterKeyboard(ctx.locale));
+    return;
+  }
+
+  await sendTelegramMessage(ctx.chatId, `<b>${escapeHtml(title)}</b>`, tasksFilterKeyboard(ctx.locale));
+
+  for (const [index, task] of tasks.entries()) {
+    const due = task.due_date ? ` (${task.due_date})` : '';
+    const status = task.status !== 'todo' ? ` [${task.status}]` : '';
+    const text = `${index + 1}. <b>${escapeHtml(task.title)}</b>${due}${status}`;
+    const markup = filter === 'open' ? taskItemKeyboard(ctx.locale, task) : navRow(ctx.locale, refresh);
+    await sendTelegramMessage(ctx.chatId, text, markup);
+  }
 }
 
 export async function addTask(ctx: BotContext, title: string) {
@@ -70,8 +93,8 @@ export async function addTask(ctx: BotContext, title: string) {
   );
 }
 
-export async function updateTaskStatus(ctx: BotContext, index: number, status: 'in_progress' | 'done') {
-  const task = await getOpenTaskByIndex(ctx, index);
+export async function updateTaskStatusById(ctx: BotContext, taskId: string, status: 'in_progress' | 'done') {
+  const task = await getOwnedTask(ctx, taskId);
   const copy = COPY[ctx.locale];
   if (!task) {
     await sendTelegramMessage(ctx.chatId, copy.taskNotFound);
@@ -91,12 +114,12 @@ export async function updateTaskStatus(ctx: BotContext, index: number, status: '
 
   await sendTelegramMessage(
     ctx.chatId,
-    `${copy.updated} <b>${escapeHtml(task.title)}</b> → ${status}`,
+    `${copy.updated} <b>${escapeHtml(task.title)}</b>`,
   );
 }
 
-export async function editTaskTitle(ctx: BotContext, index: number, title: string) {
-  const task = await getOpenTaskByIndex(ctx, index);
+export async function editTaskTitleById(ctx: BotContext, taskId: string, title: string) {
+  const task = await getOwnedTask(ctx, taskId);
   const copy = COPY[ctx.locale];
   if (!task) {
     await sendTelegramMessage(ctx.chatId, copy.taskNotFound);
@@ -112,14 +135,11 @@ export async function editTaskTitle(ctx: BotContext, index: number, title: strin
 
   if (error) throw error;
 
-  await sendTelegramMessage(
-    ctx.chatId,
-    `${copy.updated} <b>${escapeHtml(cleanTitle)}</b>`,
-  );
+  await sendTelegramMessage(ctx.chatId, `${copy.updated} <b>${escapeHtml(cleanTitle)}</b>`);
 }
 
-export async function editTaskDueDate(ctx: BotContext, index: number, dueDate: string) {
-  const task = await getOpenTaskByIndex(ctx, index);
+export async function editTaskDueDateById(ctx: BotContext, taskId: string, dueDate: string) {
+  const task = await getOwnedTask(ctx, taskId);
   const copy = COPY[ctx.locale];
   if (!task) {
     await sendTelegramMessage(ctx.chatId, copy.taskNotFound);
@@ -134,14 +154,11 @@ export async function editTaskDueDate(ctx: BotContext, index: number, dueDate: s
 
   if (error) throw error;
 
-  await sendTelegramMessage(
-    ctx.chatId,
-    `${copy.updated} <b>${escapeHtml(task.title)}</b> → ${dueDate}`,
-  );
+  await sendTelegramMessage(ctx.chatId, `${copy.updated} <b>${escapeHtml(task.title)}</b> → ${dueDate}`);
 }
 
-export async function deleteTask(ctx: BotContext, index: number) {
-  const task = await getOpenTaskByIndex(ctx, index);
+export async function deleteTaskById(ctx: BotContext, taskId: string) {
+  const task = await getOwnedTask(ctx, taskId);
   const copy = COPY[ctx.locale];
   if (!task) {
     await sendTelegramMessage(ctx.chatId, copy.taskNotFound);
@@ -156,10 +173,43 @@ export async function deleteTask(ctx: BotContext, index: number) {
 
   if (error) throw error;
 
-  await sendTelegramMessage(
-    ctx.chatId,
-    `${copy.deleted} <b>${escapeHtml(task.title)}</b>`,
-  );
+  await sendTelegramMessage(ctx.chatId, `${copy.deleted} <b>${escapeHtml(task.title)}</b>`);
+}
+
+export async function updateTaskStatus(ctx: BotContext, index: number, status: 'in_progress' | 'done') {
+  const task = await getOpenTaskByIndex(ctx, index);
+  if (!task) {
+    await sendTelegramMessage(ctx.chatId, COPY[ctx.locale].taskNotFound);
+    return;
+  }
+  await updateTaskStatusById(ctx, task.id, status);
+}
+
+export async function editTaskTitle(ctx: BotContext, index: number, title: string) {
+  const task = await getOpenTaskByIndex(ctx, index);
+  if (!task) {
+    await sendTelegramMessage(ctx.chatId, COPY[ctx.locale].taskNotFound);
+    return;
+  }
+  await editTaskTitleById(ctx, task.id, title);
+}
+
+export async function editTaskDueDate(ctx: BotContext, index: number, dueDate: string) {
+  const task = await getOpenTaskByIndex(ctx, index);
+  if (!task) {
+    await sendTelegramMessage(ctx.chatId, COPY[ctx.locale].taskNotFound);
+    return;
+  }
+  await editTaskDueDateById(ctx, task.id, dueDate);
+}
+
+export async function deleteTask(ctx: BotContext, index: number) {
+  const task = await getOpenTaskByIndex(ctx, index);
+  if (!task) {
+    await sendTelegramMessage(ctx.chatId, COPY[ctx.locale].taskNotFound);
+    return;
+  }
+  await deleteTaskById(ctx, task.id);
 }
 
 export async function sendDailyTasksForConnection(ctx: BotContext, today: string) {
@@ -175,8 +225,19 @@ export async function sendDailyTasksForConnection(ctx: BotContext, today: string
 
   const tasks = (data ?? []) as Task[];
   const copy = COPY[ctx.locale];
-  await sendTelegramMessage(
-    ctx.chatId,
-    tasks.length ? formatTaskList(tasks, copy.dailyTitle) : copy.noDailyTasks,
-  );
+
+  if (!tasks.length) {
+    await sendTelegramMessage(ctx.chatId, copy.noDailyTasks);
+    return;
+  }
+
+  await sendTelegramMessage(ctx.chatId, `<b>${escapeHtml(copy.dailyTitle)}</b>`);
+  for (const task of tasks) {
+    const due = task.due_date ? ` (${task.due_date})` : '';
+    await sendTelegramMessage(
+      ctx.chatId,
+      `<b>${escapeHtml(task.title)}</b>${due}`,
+      taskItemKeyboard(ctx.locale, task),
+    );
+  }
 }

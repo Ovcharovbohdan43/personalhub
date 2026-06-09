@@ -1,6 +1,9 @@
 ﻿import { createAdminClient } from '@/lib/supabase/admin';
+import { handleCallbackQuery } from '@/modules/telegram/callbacks';
 import { COPY } from '@/modules/telegram/copy';
 import { handleLinkedMessage } from '@/modules/telegram/commands';
+import { mainMenuKeyboard } from '@/modules/telegram/keyboards';
+import { menuWelcome } from '@/modules/telegram/menu';
 import { sendTelegramMessage } from '@/modules/telegram/telegram-api';
 import { sendDailyTasksForConnection } from '@/modules/telegram/task-commands';
 import type { BotContext, TelegramMessage, TelegramUpdate } from '@/modules/telegram/types';
@@ -88,10 +91,30 @@ async function handleStart(message: TelegramMessage, token: string | undefined) 
     .update({ used_at: new Date().toISOString() })
     .eq('id', row.id);
 
-  await sendTelegramMessage(chatId, COPY[row.preferred_locale].linked);
+  await sendTelegramMessage(
+    chatId,
+    `${COPY[row.preferred_locale].linked}\n\n${menuWelcome(row.preferred_locale)}`,
+    mainMenuKeyboard(row.preferred_locale),
+  );
 }
 
 export async function handleTelegramUpdate(update: TelegramUpdate) {
+  if (update.callback_query?.data && update.callback_query.message?.chat.type === 'private') {
+    const chatId = update.callback_query.message.chat.id;
+    const connection = await findConnection(chatId);
+    if (!connection) {
+      await sendTelegramMessage(chatId, COPY.ru.notLinked);
+      return;
+    }
+
+    await handleCallbackQuery(
+      buildContext(connection),
+      update.callback_query.id,
+      update.callback_query.data,
+    );
+    return;
+  }
+
   const message = update.message;
   const text = message?.text?.trim();
   if (!message || !text || message.chat.type !== 'private') return;

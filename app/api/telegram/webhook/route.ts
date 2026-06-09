@@ -1,11 +1,11 @@
-import { NextResponse, type NextRequest } from 'next/server';
+﻿import { NextResponse, type NextRequest } from 'next/server';
 import { handleTelegramUpdate, type TelegramUpdate } from '@/modules/telegram/bot';
 import { sendTelegramMessage } from '@/modules/telegram/telegram-api';
 
 export const runtime = 'nodejs';
 
 async function notifyWebhookFailure(update: TelegramUpdate, error: unknown) {
-  const chatId = update.message?.chat?.id;
+  const chatId = update.message?.chat?.id ?? update.callback_query?.message?.chat?.id;
   if (!chatId || !process.env.TELEGRAM_BOT_TOKEN) return;
 
   const message = error instanceof Error ? error.message : 'Unknown server error';
@@ -37,7 +37,8 @@ export async function POST(request: NextRequest) {
 
   try {
     update = (await request.json()) as TelegramUpdate;
-    console.log('Telegram webhook update', update.update_id, update.message?.text ?? '(no text)');
+    const label = update.message?.text ?? update.callback_query?.data ?? '(no payload)';
+    console.log('Telegram webhook update', update.update_id, label);
     await handleTelegramUpdate(update);
     return NextResponse.json({ ok: true });
   } catch (error) {

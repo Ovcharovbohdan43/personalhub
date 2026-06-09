@@ -2,17 +2,20 @@
 import { COPY } from '@/modules/telegram/copy';
 import {
   escapeHtml,
-  formatBudgetList,
-  formatCardList,
   formatFinanceSummary,
   formatMoney,
-  formatTransactionList,
 } from '@/modules/telegram/formatters';
+import {
+  budgetItemKeyboard,
+  cardItemKeyboard,
+  navRow,
+  txItemKeyboard,
+} from '@/modules/telegram/keyboards';
 import { sendTelegramMessage } from '@/modules/telegram/telegram-api';
 import type { BotContext } from '@/modules/telegram/types';
 import type { Budget, CreditCard, ExpenseCategory, Transaction } from '@/types/database';
 
-const LIST_LIMIT = 10;
+const LIST_LIMIT = 8;
 
 async function fetchRecentTransactions(ctx: BotContext) {
   const { data } = await ctx.supabase
@@ -31,6 +34,17 @@ async function getTransactionByIndex(ctx: BotContext, index: number) {
   return transactions[index - 1] ?? null;
 }
 
+async function getOwnedTransaction(ctx: BotContext, txId: string) {
+  const { data } = await ctx.supabase
+    .from('transactions')
+    .select('*, expense_categories(name,color), credit_cards(name)')
+    .eq('id', txId)
+    .eq('user_id', ctx.connection.user_id)
+    .maybeSingle();
+
+  return data as Transaction | null;
+}
+
 async function fetchActiveCards(ctx: BotContext) {
   const { data } = await ctx.supabase
     .from('credit_cards')
@@ -46,6 +60,18 @@ async function fetchActiveCards(ctx: BotContext) {
 async function getCardByIndex(ctx: BotContext, index: number) {
   const cards = await fetchActiveCards(ctx);
   return cards[index - 1] ?? null;
+}
+
+async function getOwnedCard(ctx: BotContext, cardId: string) {
+  const { data } = await ctx.supabase
+    .from('credit_cards')
+    .select('*')
+    .eq('id', cardId)
+    .eq('user_id', ctx.connection.user_id)
+    .eq('is_archived', false)
+    .maybeSingle();
+
+  return data as CreditCard | null;
 }
 
 export async function showFinanceReport(ctx: BotContext) {
@@ -72,9 +98,7 @@ export async function showFinanceReport(ctx: BotContext) {
     spentMap.set(tx.category_id, current);
   }
 
-  const topCategories = [...spentMap.values()]
-    .sort((a, b) => b.spent - a.spent)
-    .slice(0, 5);
+  const topCategories = [...spentMap.values()].sort((a, b) => b.spent - a.spent).slice(0, 5);
 
   await sendTelegramMessage(
     ctx.chatId,
@@ -87,16 +111,28 @@ export async function showFinanceReport(ctx: BotContext) {
       periodEnd: period.end,
       topCategories,
     }),
+    navRow(ctx.locale, 'nav:fin'),
   );
 }
 
 export async function listTransactions(ctx: BotContext) {
   const copy = COPY[ctx.locale];
   const transactions = await fetchRecentTransactions(ctx);
-  await sendTelegramMessage(
-    ctx.chatId,
-    transactions.length ? formatTransactionList(transactions, copy.txListTitle) : copy.emptyTx,
-  );
+
+  if (!transactions.length) {
+    await sendTelegramMessage(ctx.chatId, copy.emptyTx, navRow(ctx.locale, 'nav:tx'));
+    return;
+  }
+
+  await sendTelegramMessage(ctx.chatId, `<b>${escapeHtml(copy.txListTitle)}</b>`, navRow(ctx.locale, 'nav:tx'));
+
+  for (const [index, tx] of transactions.entries()) {
+    const category = tx.expense_categories?.name ? ` · ${escapeHtml(tx.expense_categories.name)}` : '';
+    const sign = tx.type === 'income' ? '+' : '-';
+    const note = tx.note ? ` — ${escapeHtml(tx.note)}` : '';
+    const text = `${index + 1}. ${sign}${formatMoney(Number(tx.amount))} (${tx.occurred_on})${category}${note}`;
+    await sendTelegramMessage(ctx.chatId, text, txItemKeyboard(ctx.locale, tx));
+  }
 }
 
 export async function addTransaction(
@@ -134,14 +170,14 @@ export async function addTransaction(
   );
 }
 
-export async function editTransaction(
+export async function editTransactionById(
   ctx: BotContext,
-  index: number,
+  txId: string,
   field: 'amount' | 'note' | 'date' | 'type',
   value: string,
 ) {
   const copy = COPY[ctx.locale];
-  const tx = await getTransactionByIndex(ctx, index);
+  const tx = await getOwnedTransaction(ctx, txId);
   if (!tx) {
     await sendTelegramMessage(ctx.chatId, copy.txNotFound);
     return;
@@ -180,12 +216,12 @@ export async function editTransaction(
 
   if (error) throw error;
 
-  await sendTelegramMessage(ctx.chatId, `${copy.txUpdated} #${index}`);
+  await sendTelegramMessage(ctx.chatId, copy.txUpdated);
 }
 
-export async function deleteTransaction(ctx: BotContext, index: number) {
+export async function deleteTransactionById(ctx: BotContext, txId: string) {
   const copy = COPY[ctx.locale];
-  const tx = await getTransactionByIndex(ctx, index);
+  const tx = await getOwnedTransaction(ctx, txId);
   if (!tx) {
     await sendTelegramMessage(ctx.chatId, copy.txNotFound);
     return;
@@ -199,7 +235,25 @@ export async function deleteTransaction(ctx: BotContext, index: number) {
 
   if (error) throw error;
 
-  await sendTelegramMessage(ctx.chatId, `${copy.txDeleted} #${index}`);
+  await sendTelegramMessage(ctx.chatId, copy.txDeleted);
+}
+
+export async function editTransaction(ctx: BotContext, index: number, field: 'amount' | 'note' | 'date' | 'type', value: string) {
+  const tx = await getTransactionByIndex(ctx, index);
+  if (!tx) {
+    await sendTelegramMessage(ctx.chatId, COPY[ctx.locale].txNotFound);
+    return;
+  }
+  await editTransactionById(ctx, tx.id, field, value);
+}
+
+export async function deleteTransaction(ctx: BotContext, index: number) {
+  const tx = await getTransactionByIndex(ctx, index);
+  if (!tx) {
+    await sendTelegramMessage(ctx.chatId, COPY[ctx.locale].txNotFound);
+    return;
+  }
+  await deleteTransactionById(ctx, tx.id);
 }
 
 export async function listBudgets(ctx: BotContext) {
@@ -229,15 +283,32 @@ export async function listBudgets(ctx: BotContext) {
     spentByCategory.set(tx.category_id, (spentByCategory.get(tx.category_id) ?? 0) + Number(tx.amount));
   }
 
-  await sendTelegramMessage(
-    ctx.chatId,
-    budgets.length ? formatBudgetList(budgets, spentByCategory, copy.budgetListTitle) : copy.emptyBudgets,
-  );
+  if (!budgets.length) {
+    await sendTelegramMessage(ctx.chatId, copy.emptyBudgets, navRow(ctx.locale, 'nav:budget'));
+    return;
+  }
+
+  await sendTelegramMessage(ctx.chatId, `<b>${escapeHtml(copy.budgetListTitle)}</b>`, navRow(ctx.locale, 'nav:budget'));
+
+  for (const [index, budget] of budgets.entries()) {
+    const name = budget.expense_categories?.name ?? '?';
+    const spent = spentByCategory.get(budget.category_id) ?? 0;
+    const limit = Number(budget.limit_amount);
+    const percent = limit > 0 ? Math.round((spent / limit) * 100) : 0;
+    const text = `${index + 1}. <b>${escapeHtml(name)}</b>: ${formatMoney(spent)} / ${formatMoney(limit)} (${percent}%)`;
+    await sendTelegramMessage(ctx.chatId, text, budgetItemKeyboard(ctx.locale, budget));
+  }
 }
 
-export async function setBudget(ctx: BotContext, categoryName: string, limitAmount: number) {
+export async function setBudgetByCategoryId(ctx: BotContext, categoryId: string, limitAmount: number) {
   const copy = COPY[ctx.locale];
-  const category = await findCategoryByName(ctx.supabase, ctx.connection.user_id, categoryName) as ExpenseCategory | null;
+  const { data: category } = await ctx.supabase
+    .from('expense_categories')
+    .select('*')
+    .eq('id', categoryId)
+    .eq('user_id', ctx.connection.user_id)
+    .maybeSingle();
+
   if (!category) {
     await sendTelegramMessage(ctx.chatId, copy.categoryNotFound);
     return;
@@ -248,14 +319,14 @@ export async function setBudget(ctx: BotContext, categoryName: string, limitAmou
     .from('budgets')
     .select('id')
     .eq('user_id', ctx.connection.user_id)
-    .eq('category_id', category.id)
+    .eq('category_id', categoryId)
     .lte('period_start', period.end)
     .gte('period_end', period.start)
     .maybeSingle();
 
   const payload = {
     user_id: ctx.connection.user_id,
-    category_id: category.id,
+    category_id: categoryId,
     limit_amount: limitAmount,
     period_start: period.start,
     period_end: period.end,
@@ -269,17 +340,37 @@ export async function setBudget(ctx: BotContext, categoryName: string, limitAmou
 
   await sendTelegramMessage(
     ctx.chatId,
-    `${copy.budgetSet} <b>${escapeHtml(category.name)}</b> → ${formatMoney(limitAmount)}`,
+    `${copy.budgetSet} <b>${escapeHtml((category as ExpenseCategory).name)}</b> → ${formatMoney(limitAmount)}`,
   );
+}
+
+export async function setBudget(ctx: BotContext, categoryName: string, limitAmount: number) {
+  const category = await findCategoryByName(ctx.supabase, ctx.connection.user_id, categoryName);
+  if (!category) {
+    await sendTelegramMessage(ctx.chatId, COPY[ctx.locale].categoryNotFound);
+    return;
+  }
+  await setBudgetByCategoryId(ctx, category.id, limitAmount);
 }
 
 export async function listCards(ctx: BotContext) {
   const copy = COPY[ctx.locale];
   const cards = await fetchActiveCards(ctx);
-  await sendTelegramMessage(
-    ctx.chatId,
-    cards.length ? formatCardList(cards, copy.cardsTitle) : copy.emptyCards,
-  );
+
+  if (!cards.length) {
+    await sendTelegramMessage(ctx.chatId, copy.emptyCards, navRow(ctx.locale, 'nav:cards'));
+    return;
+  }
+
+  await sendTelegramMessage(ctx.chatId, `<b>${escapeHtml(copy.cardsTitle)}</b>`, navRow(ctx.locale, 'nav:cards'));
+
+  for (const [index, card] of cards.entries()) {
+    const limit = Number(card.credit_limit);
+    const balance = Number(card.current_balance);
+    const available = Math.max(0, limit - balance);
+    const text = `${index + 1}. <b>${escapeHtml(card.name)}</b>: ${formatMoney(balance)} / ${formatMoney(limit)} (free ${formatMoney(available)})`;
+    await sendTelegramMessage(ctx.chatId, text, cardItemKeyboard(ctx.locale, card));
+  }
 }
 
 export async function addCard(ctx: BotContext, name: string, creditLimit: number) {
@@ -298,15 +389,12 @@ export async function addCard(ctx: BotContext, name: string, creditLimit: number
 
   if (error) throw error;
 
-  await sendTelegramMessage(
-    ctx.chatId,
-    `${copy.cardAdded} <b>${escapeHtml(name)}</b> (${formatMoney(creditLimit)})`,
-  );
+  await sendTelegramMessage(ctx.chatId, `${copy.cardAdded} <b>${escapeHtml(name)}</b> (${formatMoney(creditLimit)})`);
 }
 
-export async function payCard(ctx: BotContext, index: number, amount: number) {
+export async function payCardById(ctx: BotContext, cardId: string, amount: number) {
   const copy = COPY[ctx.locale];
-  const card = await getCardByIndex(ctx, index);
+  const card = await getOwnedCard(ctx, cardId);
   if (!card) {
     await sendTelegramMessage(ctx.chatId, copy.cardNotFound);
     return;
@@ -337,15 +425,21 @@ export async function payCard(ctx: BotContext, index: number, amount: number) {
     return;
   }
 
-  await sendTelegramMessage(
-    ctx.chatId,
-    `${copy.cardPaid} <b>${escapeHtml(card.name)}</b> — ${formatMoney(amount)}`,
-  );
+  await sendTelegramMessage(ctx.chatId, `${copy.cardPaid} <b>${escapeHtml(card.name)}</b> — ${formatMoney(amount)}`);
 }
 
-export async function archiveCard(ctx: BotContext, index: number) {
-  const copy = COPY[ctx.locale];
+export async function payCard(ctx: BotContext, index: number, amount: number) {
   const card = await getCardByIndex(ctx, index);
+  if (!card) {
+    await sendTelegramMessage(ctx.chatId, COPY[ctx.locale].cardNotFound);
+    return;
+  }
+  await payCardById(ctx, card.id, amount);
+}
+
+export async function archiveCardById(ctx: BotContext, cardId: string) {
+  const copy = COPY[ctx.locale];
+  const card = await getOwnedCard(ctx, cardId);
   if (!card) {
     await sendTelegramMessage(ctx.chatId, copy.cardNotFound);
     return;
@@ -359,8 +453,14 @@ export async function archiveCard(ctx: BotContext, index: number) {
 
   if (error) throw error;
 
-  await sendTelegramMessage(
-    ctx.chatId,
-    `${copy.cardArchived} <b>${escapeHtml(card.name)}</b>`,
-  );
+  await sendTelegramMessage(ctx.chatId, `${copy.cardArchived} <b>${escapeHtml(card.name)}</b>`);
+}
+
+export async function archiveCard(ctx: BotContext, index: number) {
+  const card = await getCardByIndex(ctx, index);
+  if (!card) {
+    await sendTelegramMessage(ctx.chatId, COPY[ctx.locale].cardNotFound);
+    return;
+  }
+  await archiveCardById(ctx, card.id);
 }

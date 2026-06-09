@@ -16,9 +16,17 @@ export type TelegramMessage = {
   from?: TelegramUser;
 };
 
+export type TelegramCallbackQuery = {
+  id: string;
+  from: TelegramUser;
+  message?: TelegramMessage;
+  data?: string;
+};
+
 export type TelegramUpdate = {
   update_id: number;
   message?: TelegramMessage;
+  callback_query?: TelegramCallbackQuery;
 };
 
 export type BotContext = {
@@ -28,9 +36,21 @@ export type BotContext = {
   chatId: number;
 };
 
+export type MenuAction =
+  | 'tasks'
+  | 'tasks_done'
+  | 'finances'
+  | 'report'
+  | 'budgets'
+  | 'cards'
+  | 'add_task'
+  | 'add_expense'
+  | 'add_income';
+
 export type ParsedCommand =
   | { kind: 'start'; token?: string }
   | { kind: 'help' }
+  | { kind: 'menu'; action: MenuAction }
   | { kind: 'tasks'; filter: 'open' | 'done' }
   | { kind: 'task_add'; title: string }
   | { kind: 'task_status'; index: number; status: 'in_progress' | 'done' }
